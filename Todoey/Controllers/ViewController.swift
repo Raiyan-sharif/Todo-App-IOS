@@ -7,26 +7,28 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    let defaults = UserDefaults.standard
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         
         print(dataFilePath)
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
-    
-        itemArray.append(Item(title: "Hello",done: false))
-        itemArray.append(Item(title: "Raiyan go",done: false))
+//        let newItem = Item()
+//        newItem.title = "Find Mike"
+//        itemArray.append(newItem)
+//    
+//        itemArray.append(Item(title: "Hello",done: false))
+//        itemArray.append(Item(title: "Raiyan go",done: false))
  
-        
+        loadItems()
 //        if let items = defaults.array(forKey: "TodoListArray") as? [Item]{
 //            itemArray = items
 //        }
@@ -50,6 +52,10 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         //        print(itemArray[indexPath.row])
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        
+        
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
 
         saveItems()
         tableView.deselectRow(at: indexPath, animated: true)
@@ -67,8 +73,10 @@ class TodoListViewController: UITableViewController {
                     
                 }
                 else{
-                    let item = Item()
+                    
+                    let item = Item(context: self.context)
                     item.title = text
+                    item.done = false
                     self.itemArray.append(item)
                     self.saveItems()
                     
@@ -85,15 +93,27 @@ class TodoListViewController: UITableViewController {
         present(alert,animated: true, completion: nil)
     }
     func saveItems(){
-        let encoder = PropertyListEncoder()
+        
         do{
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         }catch{
-            print("Encoding failed \(error)")
+           print("Error saving context \(error)")
         }
         
         self.tableView.reloadData()
+    }
+    
+    func loadItems(){
+//        let data = try? Data(contentsOf: dataFilePath!)
+//        let decoder = PropertyListDecoder()
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        do{
+//            itemArray = try decoder.decode([Item].self, from: data!)
+            itemArray = try context.fetch(request)
+        }catch{
+            print("Error fatching data from context \(error)")
+        }
     }
     
     
